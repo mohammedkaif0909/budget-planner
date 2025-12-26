@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login | Budget Planner</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+
+<div class="w-full max-w-sm bg-white shadow-lg p-7 rounded-xl">
+  <h2 class="text-2xl font-bold text-center mb-6">Login</h2>
+
+  <input id="email" type="email" placeholder="Email" class="w-full mb-4 p-2 border rounded" />
+  <input id="password" type="password" placeholder="Password" class="w-full mb-4 p-2 border rounded" />
+  <p id="error-msg" class="text-red-500 text-center mb-3"></p>
+
+  <button id="login-btn" class="w-full bg-blue-600 text-white py-2 rounded-lg mb-4">Login</button>
+
+  <p class="text-center">
+    Don't have an account? <a href="signup.html" class="text-green-600">Sign Up</a>
+  </p>
+</div>
+
+<script type="module">
+  import { auth } from './firebase-config.js';
+  import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+
+  const emailInput = document.getElementById('email');
+  const passwordInput = document.getElementById('password');
+  const loginBtn = document.getElementById('login-btn');
+  const errorMsg = document.getElementById('error-msg');
+
+  loginBtn.addEventListener('click', () => {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+
+    if (!email || !password) {
+      errorMsg.textContent = "Please enter both email and password";
+      return;
+    }
+
+    signInWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        // Login successful → redirect to index.html
+        window.location.href = "index.html";
+      })
+      .catch((error) => {
+        errorMsg.textContent = error.message;
+      });
+  });
+</script>
+
+</body>
+</html>

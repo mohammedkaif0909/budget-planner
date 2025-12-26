@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Budget Planner — Month Dashboard</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* AI CHAT STYLES */
+    #ai-chat-button {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, #2563eb, #6d28d9);
+      position: fixed;
+      bottom: 22px;
+      right: 22px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: white;
+      font-size: 30px;
+      cursor: pointer;
+      z-index: 9999;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      transition: 0.2s;
+      border: none;
+    }
+    #ai-chat-button:hover { transform: translateY(-4px); }
+
+    #ai-chat-box {
+      width: 350px;
+      height: 480px;
+      background: white;
+      position: fixed;
+      bottom: 95px;
+      right: 22px;
+      border-radius: 14px;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.22);
+      display: flex;
+      flex-direction: column;
+      z-index: 9999;
+      overflow: hidden;
+    }
+
+    .ai-chat-header {
+      background: #0f1724;
+      color: white;
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .ai-chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      background: #f3f4f6;
+    }
+
+    .msg {
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      max-width: 80%;
+      border-radius: 12px;
+      line-height: 1.3;
+      font-size: 14px;
+    }
+
+    .msg.user {
+      background: #2563eb;
+      color: white;
+      margin-left: auto;
+      text-align: right;
+    }
+
+    .msg.ai {
+      background: #e5e7eb;
+      color: #111827;
+      margin-right: auto;
+    }
+
+    .ai-chat-input {
+      padding: 10px;
+      display: flex;
+      gap: 6px;
+      border-top: 1px solid #ddd;
+      background: white;
+    }
+
+    .ai-chat-input input {
+      flex: 1;
+      border-radius: 10px;
+      border: 1px solid #dadde2;
+      padding: 10px;
+      font-size: 14px;
+    }
+
+    .ai-chat-input button {
+      width: 46px;
+      height: 46px;
+      border: none;
+      color: white;
+      border-radius: 10px;
+      cursor: pointer;
+      background: linear-gradient(135deg, #2563eb, #6d28d9);
+    }
+
+    .ai-chat-input button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .ai-chat-input button:hover:not(:disabled) {
+      transform: scale(1.05);
+    }
+
+    .ai-chat-messages::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .ai-chat-messages::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+
+    .ai-chat-messages::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+
+    .ai-chat-messages::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    @media (max-width: 640px) {
+      #ai-chat-box {
+        width: 90vw;
+        height: 60vh;
+        bottom: 80px;
+        right: 5vw;
+      }
+
+      #ai-chat-button {
+        bottom: 20px;
+        right: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="app-root" class="app">
+
+    <!-- SIDEBAR -->
+    <aside :class="['sidebar', { expanded: sidebarExpanded }]" id="sidebar"
+           @mouseenter="sidebarHover(true)" @mouseleave="sidebarHover(false)">
+
+      <div class="brand" @click="toggleSidebar">
+        <div class="logo">BP</div>
+        <div class="title">Budget Planner</div>
+      </div>
+
+      <nav class="nav">
+        <div :class="['nav-item', { active: activePage==='dashboard' }]" @click="go('dashboard')">
+          <span class="ico material-symbols-rounded">dashboard</span>
+          <span class="label">Dashboard</span>
+        </div>
+        <div :class="['nav-item', { active: activePage==='transactions' }]" @click="go('transactions')">
+          <span class="ico material-symbols-rounded">paid</span>
+          <span class="label">Transactions</span>
+        </div>
+        <div :class="['nav-item', { active: activePage==='reports' }]" @click="go('reports')">
+          <span class="ico material-symbols-rounded">analytics</span>
+          <span class="label">Reports</span>
+        </div>
+        <div :class="['nav-item', { active: activePage==='goals' }]" @click="go('goals')">
+          <span class="ico material-symbols-rounded">flag_circle</span>
+          <span class="label">Goals</span>
+        </div>
+        <div :class="['nav-item', { active: activePage==='settings' }]" @click="go('settings')">
+          <span class="ico material-symbols-rounded">settings</span>
+          <span class="label">Settings</span>
+        </div>
+      </nav>
+
+      <div class="footer">
+        <button class="round-btn" title="Logout" @click="logout">
+          <span class="material-symbols-rounded">logout</span>
+        </button>
+        <button class="round-btn" title="Collapse/Expand" @click="toggleSidebar">
+          <span class="material-symbols-rounded">chevron_left</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+      <div class="top-row">
+        <div class="page-title">
+          <h1>{{ pageTitle }}</h1>
+          <p class="muted">Manage your month-by-month budget</p>
+        </div>
+
+        <div class="controls">
+          <div class="pill">Day {{ selectedDay }}</div>
+          <select v-model.number="selectedMonth" @change="onMonthYearChanged" style="padding:8px;border-radius:8px;border:1px solid #e6eefc;">
+            <option v-for="(m,idx) in months" :value="idx">{{ m }}</option>
+          </select>
+          <select v-model.number="selectedYear" @change="onMonthYearChanged" style="padding:8px;border-radius:8px;border:1px solid #e6eefc;">
+            <option v-for="y in yearRange" :value="y">{{ y }}</option>
+          </select>
+          <button class="btn ghost" @click="selectedDay = selectedDay % 30 + 1">Next day</button>
+          <button class="btn" @click="updateAllCharts">Refresh</button>
+        </div>
+      </div>
+
+      <div class="grid">
+        <section>
+          <!-- DASHBOARD PAGE -->
+          <div v-if="activePage==='dashboard'">
+            <div class="panel" style="margin-bottom:12px">
+              <h3 style="margin:0">Monthly Overview — {{ months[selectedMonth] }} {{ selectedYear }}</h3>
+              <div class="muted" style="margin-bottom:10px">Category totals for this month (all days included).</div>
+              <div style="display:flex;gap:12px;align-items:center">
+                <div style="flex:1">
+                  <canvas id="dashboardPie" height="240"></canvas>
+                </div>
+                <div style="width:220px">
+                  <div style="margin-bottom:8px;font-weight:700">Top categories</div>
+                  <ul style="padding-left:18px;margin:0;color:var(--muted)">
+                    <li v-for="i in monthTopCategories" style="margin-bottom:6px">{{ i }}</li>
+                    <li v-if="monthTopCategories.length===0">No categories yet</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TRANSACTIONS PAGE -->
+          <div v-if="activePage==='transactions'">
+            <div class="panel" style="margin-bottom:12px; padding:14px;">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div>
+                  <h3 style="margin:0">Add Income / Expense</h3>
+                  <div class="muted">Add an entry to your budget.</div>
+                </div>
+                <div style="display:flex;gap:8px">
+                  <button class="btn ghost" @click="clearForm">Reset</button>
+                  <button class="btn" @click="addItem">Add</button>
+                </div>
+              </div>
+              <div style="height:12px"></div>
+              <div class="form-grid">
+                <div>
+                  <label class="muted">User Type</label>
+                  <select v-model="userType" @change="autoSetMode">
+                    <option disabled value="">Select User Type</option>
+                    <option>Student</option><option>Employee</option><option>Businessman</option><option>Housewife</option><option>Freelancer</option><option>Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="muted">Select Day</label>
+                  <select v-model="selectedDay" @change="updateAllCharts">
+                    <option v-for="d in 30" :value="d">Day {{ d }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="muted">Item</label>
+                  <select v-model="selectedItem" @change="handleItemSelection">
+                    <option disabled value="">Select Item</option>
+                    <optgroup label="Income">
+                      <option v-for="i in incomeOptionsByUser[userType] || []" :value="i">{{ i }}</option>
+                      <option>Salary</option><option>Freelance</option>
+                    </optgroup>
+                    <optgroup label="Expenses">
+                      <option>Food</option><option>Transport</option><option>Bills</option><option>Entertainment</option><option>Shopping</option><option>Health</option><option>Rent</option>
+                    </optgroup>
+                    <option>Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="muted">Amount (₹)</label>
+                  <input v-model.number="amount" type="number" placeholder="Amount">
+                </div>
+                <div>
+                  <label class="muted">Type</label>
+                  <select v-model="type">
+                    <option value="income">Income</option>
+                    <option value="expense">Expense</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="muted">Income Mode</label>
+                  <select v-if="type === 'income'" v-model="incomeMode">
+                    <option disabled value="">Mode of Income</option>
+                    <option>Monthly Salary</option><option>Pocket Money</option><option>Freelance</option><option>Bonus</option><option>Business Profit</option><option>Household Budget</option><option>Other</option>
+                  </select>
+                </div>
+                <div class="full" v-if="selectedItem === 'Other'">
+                  <label class="muted">Custom Item</label>
+                  <input v-model="customItem" placeholder="Enter item name">
+                </div>
+                <div class="full" v-if="incomeMode === 'Other'">
+                  <label class="muted">Custom Income Mode</label>
+                  <input v-model="customIncomeMode" placeholder="Enter income mode">
+                </div>
+              </div>
+            </div>
+
+            <div class="panel" style="padding:12px;">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div>
+                  <h3 style="margin:0">Transactions — Day {{ selectedDay }}</h3>
+                  <div class="muted">Quick list for selected day.</div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <div class="muted">Total: ₹ <strong>{{ dayTotal }}</strong></div>
+                  <button class="btn ghost" @click="clearDay">Clear Day</button>
+                  <button class="btn" @click="exportCSV">Export CSV</button>
+                </div>
+              </div>
+              <div class="table-wrap" style="margin-top:12px">
+                <table>
+                  <thead>
+                    <tr><th>Name</th><th>Amount</th><th>Type</th><th>Mode</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(item, idx) in dayItems" :key="idx">
+                      <td>
+                        <span :style="{ width:'10px', height:'10px', display:'inline-block', 'border-radius':'50%', 'background': colorMap[item.name] || item.color || '#ddd', 'margin-right':'8px' }"></span>
+                        {{ item.name }} <span v-if="item.isMonthly" style="color:var(--muted);font-size:12px"> (Monthly)</span>
+                      </td>
+                      <td>₹ {{ item.amount }}</td>
+                      <td>{{ item.type }}</td>
+                      <td>{{ item.type === 'income' ? item.mode || '—' : '—' }}</td>
+                    </tr>
+                    <tr v-if="dayItems.length === 0">
+                      <td colspan="4" class="muted">No entries for this day yet.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- REPORTS PAGE -->
+          <div v-if="activePage==='reports'">
+            <div class="panel">
+              <h3 style="margin:0">Monthly Reports — {{ months[selectedMonth] }} {{ selectedYear }}</h3>
+              <div class="muted" style="margin-top:6px">Aggregated income/expense across 30 days</div>
+              <div style="margin-top:12px; display:flex; gap:12px; align-items:flex-start;">
+                <div style="flex:1; min-width:240px;">
+                  <canvas id="monthlyLine" height="220"></canvas>
+                </div>
+                <div style="width:320px;">
+                  <canvas id="monthlyPie" height="220"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- GOALS PAGE -->
+          <div v-if="activePage==='goals'">
+            <div class="panel" style="margin-bottom:12px">
+              <h3 style="margin:0">Goals — {{ months[selectedMonth] }} {{ selectedYear }}</h3>
+              <div class="muted" style="margin-top:6px">Add monthly financial goals.</div>
+              <div style="margin-top:12px" class="form-grid">
+                <div>
+                  <label class="muted">Goal name</label>
+                  <input v-model="goalForm.name" placeholder="e.g., Save for phone">
+                </div>
+                <div>
+                  <label class="muted">Target amount (₹)</label>
+                  <input type="number" v-model.number="goalForm.target" placeholder="10000">
+                </div>
+                <div>
+                  <label class="muted">Month</label>
+                  <select v-model.number="goalForm.monthIndex">
+                    <option v-for="(m, idx) in months" :value="idx">{{ m }}</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="muted">Year</label>
+                  <select v-model.number="goalForm.year">
+                    <option v-for="y in yearRange" :value="y">{{ y }}</option>
+                  </select>
+                </div>
+                <div class="full">
+                  <div style="display:flex;gap:8px;margin-top:8px">
+                    <button class="btn" @click="addGoal">Add Goal</button>
+                    <button class="btn ghost" @click="resetGoalForm">Clear</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <h4 style="margin:0 0 8px 0">Goals for selected month</h4>
+              <div v-if="goalsForSelectedMonth.length === 0" class="muted">No goals for this month.</div>
+              <div v-for="g in goalsForSelectedMonth" :key="g.id" class="goal-row">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <div>
+                    <div style="font-weight:800">{{ g.name }}</div>
+                    <div class="muted small">Target: ₹ {{ g.target }}</div>
+                  </div>
+                  <div style="text-align:right">
+                    <div style="font-weight:800;font-size:18px">₹ {{ progressAmountForGoal(g) }}</div>
+                    <div class="muted small">Progress: {{ progressPercentForGoal(g) }}%</div>
+                  </div>
+                </div>
+                <div class="progress-bar" style="margin-top:10px;">
+                  <div class="progress-fill" :style="{ width: progressPercentForGoal(g) + '%', background: progressColorForGoal(g) }"></div>
+                </div>
+                <div style="display:flex;justify-content:flex-end;margin-top:8px">
+                  <button class="btn ghost" @click="deleteGoal(g.id)">Delete</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SETTINGS PAGE -->
+          <div v-if="activePage==='settings'">
+            <div class="panel">
+              <h3 style="margin:0">Settings</h3>
+              <div class="muted" style="margin-top:8px">Application preferences</div>
+              <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn ghost" @click="clearAll">Reset All Data</button>
+                <button class="btn" @click="addSample">Add sample items</button>
+                <button class="btn ghost" @click="genRandomMonth">Generate demo month</button>
+                <button class="btn" @click="updateAllCharts">Refresh charts</button>
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- RIGHT SIDEBAR -->
+        <aside>
+          <div class="panel chart-area" v-if="activePage !== 'reports'">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <h3 style="margin:0">Summary ({{ months[selectedMonth] }} {{ selectedYear }})</h3>
+                <div class="muted">Month-wide breakdown.</div>
+              </div>
+            </div>
+            <div style="margin-top:12px">
+              <canvas id="summaryChart" height="260"></canvas>
+            </div>
+            <div style="margin-top:12px;display:flex;gap:10px;">
+              <div style="flex:1;background:#f0f9ff;border-radius:10px;padding:10px;text-align:center;">
+                <div class="muted">Income (month)</div>
+                <div style="font-weight:800;font-size:18px;color:var(--success)">₹ {{ monthIncome }}</div>
+              </div>
+              <div style="flex:1;background:#fff5f5;border-radius:10px;padding:10px;text-align:center;">
+                <div class="muted">Expense (month)</div>
+                <div style="font-weight:800;font-size:18px;color:var(--danger)">₹ {{ monthExpense }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" v-if="activePage === 'reports'">
+            <h4 style="margin:0">Reports controls</h4>
+            <div class="muted" style="margin-top:8px">Quick ranges & export</div>
+            <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn ghost" @click="genRandomMonth">Generate demo</button>
+              <button class="btn" @click="exportAllCSV">Export All CSV</button>
+            </div>
+            <div style="margin-top:12px">
+              <div class="muted">Monthly totals</div>
+              <div style="margin-top:6px;font-weight:800;font-size:18px">Income: ₹ {{ monthIncome }}</div>
+              <div style="font-weight:800;font-size:18px">Expense: ₹ {{ monthExpense }}</div>
+            </div>
+          </div>
+
+        </aside>
+
+      </div>
+    </main>
+
+    <!-- AI CHAT WIDGET -->
+    <button id="ai-chat-button" @click="toggleAIChat">
+      <span class="material-symbols-rounded">smart_toy</span>
+    </button>
+
+    <div id="ai-chat-box" v-if="aiChatOpen">
+      <div class="ai-chat-header">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="material-symbols-rounded" style="font-size:20px;">smart_toy</span>
+          <strong>AI Assistant</strong>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button class="btn ghost" style="padding:4px 8px;font-size:12px" @click="clearAIChat">Clear</button>
+          <span class="material-symbols-rounded" style="cursor:pointer" @click="toggleAIChat">close</span>
+        </div>
+      </div>
+
+      <div class="ai-chat-messages" ref="chatScroll">
+        <div v-for="(m, i) in aiMessages" :key="i" :class="['msg', m.from]">
+          {{ m.text }}
+        </div>
+        <div v-if="aiLoading" class="msg ai">Typing…</div>
+      </div>
+
+      <div class="ai-chat-input">
+        <input v-model="aiInput" @keyup.enter="sendToAI" placeholder="Ask something…" />
+        <button @click="sendToAI" :disabled="aiLoading">
+          <span class="material-symbols-rounded">send</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module" src="app.js"></script>
+  
+  <!-- N8N Server Configuration -->
+  <script>
+    window.N8N_WEBHOOK_URL = "http://localhost:5678/webhook/ai-budget";
+    // Alternative: "https://your-n8n-domain.com/webhook/ai-budget"
+  </script>
+
+</body>
+</html>

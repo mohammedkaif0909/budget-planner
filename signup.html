@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sign Up | Budget Planner</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+
+<div class="w-full max-w-sm bg-white shadow-lg p-7 rounded-xl">
+  <h2 class="text-2xl font-bold text-center mb-6">Sign Up</h2>
+
+  <input id="email" type="email" placeholder="Email" class="w-full mb-4 p-2 border rounded" />
+  <input id="password" type="password" placeholder="Password" class="w-full mb-4 p-2 border rounded" />
+  <input id="confirm-password" type="password" placeholder="Confirm Password" class="w-full mb-4 p-2 border rounded" />
+
+  <p id="error-msg" class="text-red-500 text-center mb-3"></p>
+  <p id="success-msg" class="text-green-500 text-center mb-3"></p>
+
+  <button id="signup-btn" class="w-full bg-green-600 text-white py-2 rounded-lg">Sign Up</button>
+
+  <p class="text-center mt-4">
+    Already have an account? <a href="login.html" class="text-blue-600">Login</a>
+  </p>
+</div>
+
+<script type="module">
+  import { auth } from './firebase-config.js';
+  import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+
+  const emailInput = document.getElementById('email');
+  const passwordInput = document.getElementById('password');
+  const confirmInput = document.getElementById('confirm-password');
+  const signupBtn = document.getElementById('signup-btn');
+  const errorMsg = document.getElementById('error-msg');
+  const successMsg = document.getElementById('success-msg');
+
+  signupBtn.addEventListener('click', () => {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+    const confirmPassword = confirmInput.value.trim();
+
+    errorMsg.textContent = '';
+    successMsg.textContent = '';
+
+    if (!email || !password || !confirmPassword) {
+      errorMsg.textContent = "All fields are required";
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      errorMsg.textContent = "Passwords do not match";
+      return;
+    }
+
+    createUserWithEmailAndPassword(auth, email, password)
+      .then(userCredential => {
+        successMsg.textContent = "Account created successfully! Redirecting...";
+        setTimeout(() => {
+          window.location.href = "login.html"; // redirect to login
+        }, 1500);
+      })
+      .catch(error => {
+        errorMsg.textContent = error.message;
+      });
+  });
+</script>
+
+</body>
+</html>
